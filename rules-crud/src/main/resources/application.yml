@@ -1,0 +1,31 @@
+quarkus:
+  http:
+    port: 8081
+  datasource:
+    db-kind: postgresql
+    username: postgres
+    password: postgres
+    jdbc:
+      url: jdbc:postgresql://localhost:5432/rulesdb
+  hibernate-orm:
+    database:
+      generation: none
+  flyway:
+    migrate-at-start: true
+
+mp:
+  messaging:
+    outgoing:
+      ruleset_updates:
+        connector: smallrye-kafka
+        topic: ruleset_updates
+        key:
+          serializer: org.apache.kafka.common.serialization.StringSerializer
+        value:
+          serializer: org.apache.kafka.common.serialization.StringSerializer
+
+
+
+kafka:
+  bootstrap:
+    servers: localhost:9092

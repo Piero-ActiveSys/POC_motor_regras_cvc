@@ -1,0 +1,30 @@
+quarkus:
+  http:
+    port: 8082
+
+engine:
+  chunkSize: 10000
+  parallelism: 0
+  useVirtualThreads: false
+  index:
+    fields: ["Broker","Cidade","Estado","hotelId"]
+
+mp:
+  messaging:
+    incoming:
+      ruleset_updates:
+        connector: smallrye-kafka
+        topic: ruleset_updates
+        value:
+          deserializer: org.apache.kafka.common.serialization.StringDeserializer
+        key:
+          deserializer: org.apache.kafka.common.serialization.StringDeserializer
+        auto:
+          offset:
+            reset: earliest
+
+
+
+kafka:
+  bootstrap:
+    servers: localhost:9092

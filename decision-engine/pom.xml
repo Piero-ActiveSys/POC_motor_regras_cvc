@@ -1,0 +1,45 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+  <parent>
+    <groupId>br.com.cvc.poc</groupId>
+    <artifactId>kogito-poc</artifactId>
+    <version>2.0.0</version>
+  </parent>
+  <artifactId>decision-engine</artifactId>
+
+  <dependencies>
+    <dependency><groupId>io.quarkus</groupId><artifactId>quarkus-resteasy-reactive-jackson</artifactId></dependency>
+    <dependency><groupId>io.quarkus</groupId><artifactId>quarkus-hibernate-validator</artifactId></dependency>
+    <dependency><groupId>io.quarkus</groupId><artifactId>quarkus-smallrye-reactive-messaging-kafka</artifactId></dependency>
+    <dependency><groupId>io.quarkus</groupId><artifactId>quarkus-micrometer-registry-prometheus</artifactId></dependency>
+
+    <dependency><groupId>br.com.cvc.poc</groupId><artifactId>ruleset-contracts</artifactId><version>${project.version}</version></dependency>
+    <dependency><groupId>br.com.cvc.poc</groupId><artifactId>normalizer</artifactId><version>${project.version}</version></dependency>
+
+    <dependency><groupId>org.drools</groupId><artifactId>drools-core</artifactId><version>${drools.version}</version></dependency>
+    <dependency><groupId>org.drools</groupId><artifactId>drools-compiler</artifactId><version>${drools.version}</version></dependency>
+    <dependency><groupId>org.drools</groupId><artifactId>drools-mvel</artifactId><version>${drools.version}</version></dependency>
+    <dependency><groupId>org.kie</groupId><artifactId>kie-api</artifactId><version>${drools.version}</version></dependency>
+
+    <dependency><groupId>io.quarkus</groupId><artifactId>quarkus-junit5</artifactId><scope>test</scope></dependency>
+    <dependency><groupId>io.rest-assured</groupId><artifactId>rest-assured</artifactId><scope>test</scope></dependency>
+  </dependencies>
+
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>io.quarkus</groupId>
+        <artifactId>quarkus-maven-plugin</artifactId>
+        <version>${quarkus.platform.version}</version>
+        <extensions>true</extensions>
+        <executions>
+          <execution>
+            <goals><goal>build</goal><goal>generate-code</goal><goal>generate-code-tests</goal></goals>
+          </execution>
+        </executions>
+      </plugin>
+    </plugins>
+  </build>
+</project>
