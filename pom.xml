@@ -46,4 +46,22 @@
       </plugins>
     </pluginManagement>
   </build>
+
+  <profiles>
+    <!-- Profile para build nativo com GraalVM (Forma 2) -->
+    <!-- Uso: mvn -Pnative clean package -pl decision-engine -->
+    <profile>
+      <id>native</id>
+      <activation>
+        <property>
+          <name>native</name>
+        </property>
+      </activation>
+      <properties>
+        <skipITs>false</skipITs>
+        <quarkus.native.enabled>true</quarkus.native.enabled>
+        <quarkus.package.jar.enabled>false</quarkus.package.jar.enabled>
+      </properties>
+    </profile>
+  </profiles>
 </project>

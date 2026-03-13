@@ -4,3 +4,5 @@
 .vscode/
 *.iml
 .DS_Store
+tools/
+scripts/bench-results.csv
