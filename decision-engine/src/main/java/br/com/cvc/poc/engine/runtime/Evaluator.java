@@ -82,15 +82,47 @@ public final class Evaluator {
   }
 
   private static List<RuleRuntime> candidates(RulesetRuntime runtime, RuleType type, PreparedItem item) {
-    Map<String, List<RuleRuntime>> index = type == RuleType.MARKUP ? runtime.markupIndex() : runtime.commissionIndex();
+    boolean isMarkup = type == RuleType.MARKUP;
+    Map<String, List<RuleRuntime>> index = isMarkup ? runtime.markupIndex() : runtime.commissionIndex();
+    List<RuleRuntime> catchAll = isMarkup ? runtime.markupCatchAll() : runtime.commissionCatchAll();
+
+    // Try to find the best indexed bucket
+    List<RuleRuntime> bucket = null;
     if (index != null && !index.isEmpty()) {
       for (String key : item.indexKeys()) {
-        List<RuleRuntime> bucket = index.get(key);
-        if (bucket != null && !bucket.isEmpty()) {
-          return bucket;
+        List<RuleRuntime> found = index.get(key);
+        if (found != null && !found.isEmpty()) {
+          bucket = found;
+          break;
         }
       }
     }
-    return type == RuleType.MARKUP ? runtime.markupRules() : runtime.commissionRules();
+
+    // If no bucket found and no catch-all, fall back to full list
+    if (bucket == null && catchAll.isEmpty()) {
+      return isMarkup ? runtime.markupRules() : runtime.commissionRules();
+    }
+
+    // If only one side has rules, return it directly (avoid merge allocation)
+    if (bucket == null || bucket.isEmpty()) return catchAll;
+    if (catchAll.isEmpty()) return bucket;
+
+    // Merge bucket + catch-all in peso order (both are already sorted)
+    var merged = new ArrayList<RuleRuntime>(bucket.size() + catchAll.size());
+    int i = 0, j = 0;
+    while (i < bucket.size() && j < catchAll.size()) {
+      var b = bucket.get(i);
+      var c = catchAll.get(j);
+      if (b.peso() < c.peso() || (b.peso() == c.peso() && b.ruleId().compareTo(c.ruleId()) <= 0)) {
+        merged.add(b);
+        i++;
+      } else {
+        merged.add(c);
+        j++;
+      }
+    }
+    while (i < bucket.size()) merged.add(bucket.get(i++));
+    while (j < catchAll.size()) merged.add(catchAll.get(j++));
+    return merged;
   }
 }

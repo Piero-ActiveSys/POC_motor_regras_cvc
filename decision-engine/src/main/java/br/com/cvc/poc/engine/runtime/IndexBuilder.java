@@ -4,6 +4,7 @@ import br.com.cvc.poc.contracts.RuleType;
 import br.com.cvc.poc.normalizer.TextNormalizer;
 
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -12,18 +13,32 @@ import java.util.Objects;
 public final class IndexBuilder {
   private IndexBuilder() {}
 
+  private static final Comparator<RuleRuntime> RULE_ORDER =
+      Comparator.comparingInt(RuleRuntime::peso).thenComparing(RuleRuntime::ruleId);
+
   public static BuiltIndex build(List<RuleRuntime> rules, List<String> preferredFields) {
     var pref = normalizePreferredFields(preferredFields);
     Map<String, List<RuleRuntime>> markup = new LinkedHashMap<>();
     Map<String, List<RuleRuntime>> commission = new LinkedHashMap<>();
 
+    // Catch-all: rules that cannot be indexed (no equals on preferred fields)
+    var markupCatchAll = new ArrayList<RuleRuntime>();
+    var commissionCatchAll = new ArrayList<RuleRuntime>();
+
     for (var rule : rules) {
       if (!rule.enabled()) continue;
       var exactValues = extractIndexValues(rule, pref);
-      if (exactValues.isEmpty()) continue;
+      boolean isMarkup = rule.ruleType() == RuleType.MARKUP;
+
+      if (exactValues.isEmpty()) {
+        // Rule has no indexable condition → catch-all
+        if (isMarkup) markupCatchAll.add(rule);
+        else commissionCatchAll.add(rule);
+        continue;
+      }
 
       for (var key : expandKeys(exactValues, pref)) {
-        if (rule.ruleType() == RuleType.MARKUP) {
+        if (isMarkup) {
           markup.computeIfAbsent(key, __ -> new ArrayList<>()).add(rule);
         } else {
           commission.computeIfAbsent(key, __ -> new ArrayList<>()).add(rule);
@@ -31,9 +46,16 @@ public final class IndexBuilder {
       }
     }
 
+    // Sort catch-all lists
+    markupCatchAll.sort(RULE_ORDER);
+    commissionCatchAll.sort(RULE_ORDER);
+
     sortBuckets(markup);
     sortBuckets(commission);
-    return new BuiltIndex(pref, Map.copyOf(markup), Map.copyOf(commission));
+
+    return new BuiltIndex(pref,
+        Map.copyOf(markup), Map.copyOf(commission),
+        List.copyOf(markupCatchAll), List.copyOf(commissionCatchAll));
   }
 
   public static List<String> keysForSearch(Map<String, PreparedFieldValue> preparedFields, List<String> preferredFields) {
@@ -79,7 +101,7 @@ public final class IndexBuilder {
 
   private static void sortBuckets(Map<String, List<RuleRuntime>> buckets) {
     for (var entry : buckets.entrySet()) {
-      entry.getValue().sort(java.util.Comparator.comparingInt(RuleRuntime::peso).thenComparing(RuleRuntime::ruleId));
+      entry.getValue().sort(RULE_ORDER);
       entry.setValue(List.copyOf(entry.getValue()));
     }
   }
@@ -128,6 +150,8 @@ public final class IndexBuilder {
   public record BuiltIndex(
       List<String> preferredFields,
       Map<String, List<RuleRuntime>> markupIndex,
-      Map<String, List<RuleRuntime>> commissionIndex
+      Map<String, List<RuleRuntime>> commissionIndex,
+      List<RuleRuntime> markupCatchAll,
+      List<RuleRuntime> commissionCatchAll
   ) {}
 }

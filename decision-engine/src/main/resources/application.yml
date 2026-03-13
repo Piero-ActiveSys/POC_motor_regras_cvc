@@ -2,10 +2,21 @@ quarkus:
   http:
     port: 8082
 
+ruleset:
+  storage:
+    base-dir: ${RULESET_STORAGE_BASE_DIR:./storage}
+
 engine:
   chunkSize: 10000
   parallelism: 0
   useVirtualThreads: false
+  audit:
+    trace:
+      enabled: false
+  normalization:
+    enabled: ${ENGINE_NORMALIZATION_ENABLED:false}
+  drl:
+    compile-on-activation: ${ENGINE_DRL_COMPILE_ON_ACTIVATION:false}
   index:
     fields: ["Broker","Cidade","Estado","hotelId"]
 

@@ -29,6 +29,12 @@ public class OutboxEventEntity extends PanacheEntityBase {
   @Column(name="published_at")
   public OffsetDateTime publishedAt;
 
+  @Column(name="requested_by")
+  public String requestedBy;
+
+  @Column(name="detail")
+  public String detail;
+
   public static OutboxEventEntity create(UUID aggregateId, String eventType, String payload) {
     var e = new OutboxEventEntity();
     e.id = UUID.randomUUID();
@@ -36,6 +42,13 @@ public class OutboxEventEntity extends PanacheEntityBase {
     e.eventType = eventType;
     e.payload = payload;
     e.createdAt = OffsetDateTime.now();
+    return e;
+  }
+
+  public static OutboxEventEntity create(UUID aggregateId, String eventType, String payload, String requestedBy, String detail) {
+    var e = create(aggregateId, eventType, payload);
+    e.requestedBy = requestedBy;
+    e.detail = detail;
     return e;
   }
 }

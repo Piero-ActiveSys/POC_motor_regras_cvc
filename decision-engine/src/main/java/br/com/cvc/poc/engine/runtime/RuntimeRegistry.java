@@ -4,13 +4,22 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicReference;
 
 public class RuntimeRegistry {
-  private final ConcurrentHashMap<String, AtomicReference<RulesetRuntime>> map = new ConcurrentHashMap<>();
+  private final ConcurrentHashMap<String, AtomicReference<RuntimeSnapshot>> map = new ConcurrentHashMap<>();
 
-  public RulesetRuntime current(String rulesetId) {
-    return map.computeIfAbsent(rulesetId, id -> new AtomicReference<>(RulesetRuntime.empty(id))).get();
+  public RuntimeSnapshot currentSnapshot(String rulesetId) {
+    return map.computeIfAbsent(rulesetId, id -> new AtomicReference<>(RuntimeSnapshot.empty(id))).get();
   }
 
-  public void swap(String rulesetId, RulesetRuntime next) {
-    map.computeIfAbsent(rulesetId, id -> new AtomicReference<>(RulesetRuntime.empty(id))).set(next);
+  /** Backward compat: returns RulesetRuntime view from active snapshot. */
+  public RulesetRuntime current(String rulesetId) {
+    return currentSnapshot(rulesetId).toRulesetRuntime();
+  }
+
+  /**
+   * Atomic swap: replaces the active snapshot for a rulesetId.
+   * Returns the previous snapshot.
+   */
+  public RuntimeSnapshot swap(String rulesetId, RuntimeSnapshot next) {
+    return map.computeIfAbsent(rulesetId, id -> new AtomicReference<>(RuntimeSnapshot.empty(id))).getAndSet(next);
   }
 }

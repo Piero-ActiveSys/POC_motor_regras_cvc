@@ -1,5 +1,6 @@
 package br.com.cvc.poc.engine.application;
 
+import br.com.cvc.poc.contracts.AppliedDecision;
 import br.com.cvc.poc.contracts.ItemAudit;
 import br.com.cvc.poc.contracts.PricingItem;
 import br.com.cvc.poc.contracts.PricingItemResult;
@@ -9,6 +10,7 @@ import br.com.cvc.poc.contracts.RuleType;
 import br.com.cvc.poc.engine.infra.kafka.RulesetUpdatesConsumer;
 import br.com.cvc.poc.engine.metrics.MetricsCollector;
 import br.com.cvc.poc.engine.runtime.Evaluator;
+import br.com.cvc.poc.engine.runtime.MatchKeyBuilder;
 import br.com.cvc.poc.engine.runtime.PreparedItem;
 import br.com.cvc.poc.engine.runtime.RulesetRuntime;
 import jakarta.annotation.PostConstruct;
@@ -19,6 +21,7 @@ import org.eclipse.microprofile.config.inject.ConfigProperty;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
@@ -40,6 +43,9 @@ public class PricingService {
 
   @ConfigProperty(name = "engine.audit.trace.enabled", defaultValue = "false")
   boolean traceEnabled;
+
+  @ConfigProperty(name = "engine.normalization.enabled", defaultValue = "false")
+  boolean normalizationEnabled;
 
   private ExecutorService executor;
 
@@ -95,15 +101,45 @@ public class PricingService {
     var out = new ArrayList<PricingItemResult>(items.size());
     var metrics = new MetricsCollector();
 
+    // Request-scoped caches: keyed by active-fields signature, per rule type.
+    // Items that differ only on fields no rule uses (e.g. hotelId, roomId)
+    // will share the same cache entry.
+    var markupCache = new HashMap<String, AppliedDecision>(256);
+    var commissionCache = new HashMap<String, AppliedDecision>(256);
+
+    var activeMarkupFields = runtime.activeMarkupFields();
+    var activeCommissionFields = runtime.activeCommissionFields();
+
+    int cacheHits = 0;
+
     for (var item : items) {
       long prepareStart = System.nanoTime();
-      PreparedItem preparedItem = PreparedItem.from(item, runtime.preferredIndexFields());
+      PreparedItem preparedItem = normalizationEnabled
+          ? PreparedItem.from(item, runtime.preferredIndexFields())
+          : PreparedItem.fromPreNormalized(item, runtime.preferredIndexFields());
       long preparedElapsed = System.nanoTime() - prepareStart;
       metrics.addRequestPreparationNanos(preparedElapsed);
       metrics.addItemPreparationNanos(preparedElapsed);
 
-      var markup = Evaluator.evaluate(runtime, RuleType.MARKUP, preparedItem, metrics, traceEnabled);
-      var commission = Evaluator.evaluate(runtime, RuleType.COMMISSION, preparedItem, metrics, traceEnabled);
+      // --- MARKUP ---
+      String markupKey = MatchKeyBuilder.build(preparedItem, activeMarkupFields);
+      AppliedDecision markup = markupCache.get(markupKey);
+      if (markup == null) {
+        markup = Evaluator.evaluate(runtime, RuleType.MARKUP, preparedItem, metrics, traceEnabled);
+        markupCache.put(markupKey, markup);
+      } else {
+        cacheHits++;
+      }
+
+      // --- COMMISSION ---
+      String commissionKey = MatchKeyBuilder.build(preparedItem, activeCommissionFields);
+      AppliedDecision commission = commissionCache.get(commissionKey);
+      if (commission == null) {
+        commission = Evaluator.evaluate(runtime, RuleType.COMMISSION, preparedItem, metrics, traceEnabled);
+        commissionCache.put(commissionKey, commission);
+      } else {
+        cacheHits++;
+      }
 
       long mergeStart = System.nanoTime();
       var audit = new ItemAudit(markup, commission, List.of());
@@ -115,6 +151,9 @@ public class PricingService {
       ));
       metrics.addMergeResultNanos(System.nanoTime() - mergeStart);
     }
+
+    metrics.addCacheHits(cacheHits);
+    metrics.addCacheSize(markupCache.size() + commissionCache.size());
 
     return new ChunkEvalResult(out, metrics);
   }

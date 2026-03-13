@@ -39,6 +39,31 @@ public record PreparedItem(
     return new PreparedItem(item.itemId, raw, prepared, keys);
   }
 
+  /**
+   * Fast path: assumes keys and values are already normalized.
+   * Skips TextNormalizer.normKey for keys and TextNormalizer.normValue for values.
+   */
+  public static PreparedItem fromPreNormalized(PricingItem item, List<String> preferredIndexFields) {
+    var sourceFields = item.fields();
+    int expectedSize = sourceFields.size() + 1;
+
+    var raw = new HashMap<String, Object>(Math.max(16, expectedSize * 2));
+    for (var entry : sourceFields.entrySet()) {
+      if (entry.getKey() != null) {
+        raw.put(entry.getKey(), entry.getValue());
+      }
+    }
+    raw.put(QNTDE_PAX_KEY, item.qntdePax);
+
+    var prepared = new HashMap<String, PreparedFieldValue>(Math.max(16, raw.size() * 2));
+    for (var entry : raw.entrySet()) {
+      prepared.put(entry.getKey(), PreparedFieldValue.fromPreNormalized(entry.getValue()));
+    }
+
+    var keys = IndexBuilder.keysForSearch(prepared, preferredIndexFields);
+    return new PreparedItem(item.itemId, raw, prepared, keys);
+  }
+
   public boolean hasField(String field) {
     return preparedFields.containsKey(field);
   }

@@ -1,5 +1,7 @@
 package br.com.cvc.poc.engine.metrics;
 
+import io.quarkus.logging.Log;
+
 import java.util.Locale;
 
 public class MetricsCollector {
@@ -10,6 +12,17 @@ public class MetricsCollector {
     public long ruleMatchingMarkup;
     public long ruleMatchingCommission;
     public long mergeResult;
+
+    // Request-scoped cache metrics
+    public int cacheHits;
+    public int cacheSize;
+
+    // Activation pipeline metrics
+    public long manifestLoadNanos;
+    public long runtimeParseNanos;
+    public long drlCompileNanos;
+    public long snapshotBuildNanos;
+    public long swapNanos;
 
     public void addRequestPreparationNanos(long nanos) {
         requestPreparation += nanos;
@@ -35,6 +48,15 @@ public class MetricsCollector {
         mergeResult += nanos;
     }
 
+    public void addCacheHits(int hits) { cacheHits += hits; }
+    public void addCacheSize(int size) { cacheSize += size; }
+
+    public void addManifestLoadNanos(long nanos) { manifestLoadNanos += nanos; }
+    public void addRuntimeParseNanos(long nanos) { runtimeParseNanos += nanos; }
+    public void addDrlCompileNanos(long nanos) { drlCompileNanos += nanos; }
+    public void addSnapshotBuildNanos(long nanos) { snapshotBuildNanos += nanos; }
+    public void addSwapNanos(long nanos) { swapNanos += nanos; }
+
     public void mergeFrom(MetricsCollector other) {
         if (other == null) return;
         requestPreparation += other.requestPreparation;
@@ -43,17 +65,32 @@ public class MetricsCollector {
         ruleMatchingMarkup += other.ruleMatchingMarkup;
         ruleMatchingCommission += other.ruleMatchingCommission;
         mergeResult += other.mergeResult;
+        cacheHits += other.cacheHits;
+        cacheSize += other.cacheSize;
+        manifestLoadNanos += other.manifestLoadNanos;
+        runtimeParseNanos += other.runtimeParseNanos;
+        drlCompileNanos += other.drlCompileNanos;
+        snapshotBuildNanos += other.snapshotBuildNanos;
+        swapNanos += other.swapNanos;
     }
 
     public void printSummary() {
-        System.out.println("====== ENGINE METRICS ======");
-        System.out.println("requestPreparation: " + formatMillis(requestPreparation) + " ms");
-        System.out.println("itemPreparation: " + formatMillis(itemPreparation) + " ms");
-        System.out.println("indexLookup: " + formatMillis(indexLookup) + " ms");
-        System.out.println("ruleMatchingMarkup: " + formatMillis(ruleMatchingMarkup) + " ms");
-        System.out.println("ruleMatchingCommission: " + formatMillis(ruleMatchingCommission) + " ms");
-        System.out.println("mergeResult: " + formatMillis(mergeResult) + " ms");
-        System.out.println("============================");
+        Log.infof("====== ENGINE METRICS ======");
+        Log.infof("requestPreparation: %s ms", formatMillis(requestPreparation));
+        Log.infof("itemPreparation: %s ms", formatMillis(itemPreparation));
+        Log.infof("indexLookup: %s ms", formatMillis(indexLookup));
+        Log.infof("ruleMatchingMarkup: %s ms", formatMillis(ruleMatchingMarkup));
+        Log.infof("ruleMatchingCommission: %s ms", formatMillis(ruleMatchingCommission));
+        Log.infof("mergeResult: %s ms", formatMillis(mergeResult));
+        if (cacheHits > 0 || cacheSize > 0) {
+            Log.infof("cacheHits: %d (distinct keys: %d)", cacheHits, cacheSize);
+        }
+        if (manifestLoadNanos > 0) Log.infof("manifestLoad: %s ms", formatMillis(manifestLoadNanos));
+        if (runtimeParseNanos > 0) Log.infof("runtimeParse: %s ms", formatMillis(runtimeParseNanos));
+        if (drlCompileNanos > 0) Log.infof("drlCompile: %s ms", formatMillis(drlCompileNanos));
+        if (snapshotBuildNanos > 0) Log.infof("snapshotBuild: %s ms", formatMillis(snapshotBuildNanos));
+        if (swapNanos > 0) Log.infof("swap: %s ms", formatMillis(swapNanos));
+        Log.infof("============================");
     }
 
     private static String formatMillis(long nanos) {

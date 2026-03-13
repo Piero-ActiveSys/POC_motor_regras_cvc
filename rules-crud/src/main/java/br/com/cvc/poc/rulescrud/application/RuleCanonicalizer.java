@@ -12,6 +12,7 @@ import jakarta.inject.Inject;
 
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 @ApplicationScoped
 public class RuleCanonicalizer {
@@ -25,10 +26,18 @@ public class RuleCanonicalizer {
     catch (Exception e) { throw new RuntimeException(e); }
   }
 
+  /** Original method — always normalizes (backward compat). */
   public RuleDefinition toDefinition(RuleEntity e) {
+    return toDefinition(e, true);
+  }
+
+  /** Normalization-aware method. */
+  public RuleDefinition toDefinition(RuleEntity e, boolean normalize) {
     try {
       var conditions = mapper.readValue(e.conditionsJson, new TypeReference<List<RuleCondition>>() {});
-      conditions = normalizeConditions(conditions);
+      if (normalize) {
+        conditions = normalizeConditions(conditions);
+      }
       var md = Map.of("createdBy", e.createdBy, "createdAt", String.valueOf(e.createdAt));
       return new RuleDefinition(
           e.id.toString(),
@@ -53,6 +62,6 @@ public class RuleCanonicalizer {
         ))
         // remove any condition with null/empty campo after normalization
         .filter(c -> c.campo() != null && !c.campo().isBlank())
-        .toList();
+        .collect(Collectors.toList());
   }
 }

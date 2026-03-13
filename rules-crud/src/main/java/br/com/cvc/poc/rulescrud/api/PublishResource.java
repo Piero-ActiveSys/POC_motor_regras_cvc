@@ -1,9 +1,9 @@
 package br.com.cvc.poc.rulescrud.api;
 
 import br.com.cvc.poc.contracts.PublishRequest;
+import br.com.cvc.poc.contracts.PublishResponse;
 import br.com.cvc.poc.rulescrud.application.PublishService;
 import br.com.cvc.poc.rulescrud.infra.db.RulesetEntity;
-import br.com.cvc.poc.rulescrud.infra.db.RulesetVersionEntity;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
 import jakarta.validation.Valid;
@@ -21,7 +21,7 @@ public class PublishResource {
 
   @POST
   @Transactional
-  public RulesetVersionEntity publish(@PathParam("rulesetId") UUID rulesetId, @Valid PublishRequest req) {
+  public PublishResponse publish(@PathParam("rulesetId") UUID rulesetId, @Valid PublishRequest req) {
     var rs = RulesetEntity.findById(rulesetId);
     if (rs == null) throw new NotFoundException("ruleset not found");
     return publishService.publish(rulesetId, req.publishedBy());

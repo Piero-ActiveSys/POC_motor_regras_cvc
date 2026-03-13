@@ -32,6 +32,9 @@ public class RulesetVersionEntity extends PanacheEntityBase {
   @Column(name="canonical_json", nullable=false, columnDefinition="jsonb")
   public String canonicalJson;
 
+  @Column(name="manifest_path")
+  public String manifestPath;
+
   public static RulesetVersionEntity create(UUID rulesetId, long version, String checksum, String drl, String canonicalJson) {
     var e = new RulesetVersionEntity();
     e.id = UUID.randomUUID();
@@ -41,6 +44,12 @@ public class RulesetVersionEntity extends PanacheEntityBase {
     e.drl = drl;
     e.canonicalJson = canonicalJson;
     e.publishedAt = OffsetDateTime.now();
+    return e;
+  }
+
+  public static RulesetVersionEntity create(UUID rulesetId, long version, String checksum, String drl, String canonicalJson, String manifestPath) {
+    var e = create(rulesetId, version, checksum, drl, canonicalJson);
+    e.manifestPath = manifestPath;
     return e;
   }
 }

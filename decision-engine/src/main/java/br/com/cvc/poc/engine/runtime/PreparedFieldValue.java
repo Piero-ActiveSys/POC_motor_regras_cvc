@@ -23,6 +23,21 @@ public record PreparedFieldValue(
     );
   }
 
+  /**
+   * Fast path: assumes the value is already normalized (lowercase, no accents).
+   * Skips TextNormalizer.normValue and uses raw toString directly.
+   */
+  public static PreparedFieldValue fromPreNormalized(Object raw) {
+    String strValue = raw == null ? null : String.valueOf(raw).trim();
+    return new PreparedFieldValue(
+        raw,
+        strValue,
+        tryParseNumber(raw),
+        tryParseDate(raw),
+        ValueCoercion.toBoolean(raw)
+    );
+  }
+
   private static LocalDate tryParseDate(Object v) {
     try { return DateNormalizer.parseBr(v); }
     catch (Exception e) { return null; }

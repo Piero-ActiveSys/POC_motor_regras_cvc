@@ -1,0 +1,1 @@
+{"rulesetId":"6a1de01b-3a2d-431f-8cf3-5b2cb59b4720","version":72,"eventType":"RULESET_PUBLISHED","generatedAt":"2026-03-13T11:30:31.851130500-03:00","normalizationApplied":false,"checksum":"sha256:77b49817d9f8da82d3259322d8d973458d687d36c49167349aa6c701b2b05950","files":{"drl":"ruleset_v72.drl","canonical":"ruleset_v72.canonical.json","runtime":"ruleset_v72.runtime.json"}}
