@@ -23,13 +23,14 @@ public record RuntimeSnapshot(
     List<RuleRuntime> commissionCatchAll,
     Map<String, RuleRuntime> ruleById,
     DroolsCompiler.Compiled compiledDrl,
-    ManifestDto manifest
+    ManifestDto manifest,
+    FieldTypeRegistry fieldTypeRegistry
 ) {
     public static RuntimeSnapshot empty(String rulesetId) {
         return new RuntimeSnapshot(
             rulesetId, 0L, "empty", Instant.now(),
             List.of(), List.of(), List.of(), Map.of(), Map.of(), List.of(), List.of(), Map.of(),
-            null, null
+            null, null, FieldTypeRegistry.empty()
         );
     }
     /** Backward compat: create RulesetRuntime view. */
@@ -38,7 +39,8 @@ public record RuntimeSnapshot(
                 markupRules, commissionRules, markupIndex, commissionIndex,
                 markupCatchAll, commissionCatchAll,
                 extractActiveFields(markupRules),
-                extractActiveFields(commissionRules));
+                extractActiveFields(commissionRules),
+                fieldTypeRegistry);
     }
 
     /** Collect the sorted, distinct set of field names used in conditions of given rules. */

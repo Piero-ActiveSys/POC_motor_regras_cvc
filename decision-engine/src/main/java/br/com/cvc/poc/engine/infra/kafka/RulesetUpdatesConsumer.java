@@ -190,6 +190,7 @@ public class RulesetUpdatesConsumer {
     }
 
     // === SWAP ===
+    var typeRegistry = FieldTypeRegistry.build(allRules);
     var snapshot = new RuntimeSnapshot(
         evt.rulesetId(),
         evt.version(),
@@ -204,12 +205,13 @@ public class RulesetUpdatesConsumer {
         builtIndex.commissionCatchAll(),
         ruleById,
         compiledDrl,
-        manifest
+        manifest,
+        typeRegistry
     );
 
     var previous = registry.swap(evt.rulesetId(), snapshot);
-    Log.infof("Swap completed: ruleset %s v%d -> v%d (checksum=%s)",
-        evt.rulesetId(), previous.version(), evt.version(), evt.checksum());
+    Log.infof("Swap completed: ruleset %s v%d -> v%d (checksum=%s, fieldTypeRegistry=%d fields)",
+        evt.rulesetId(), previous.version(), evt.version(), evt.checksum(), typeRegistry.size());
   }
 
   /**
@@ -249,12 +251,13 @@ public class RulesetUpdatesConsumer {
         }
       }
 
+      var legacyTypeRegistry = FieldTypeRegistry.build(runtimeRules);
       var snapshot = new RuntimeSnapshot(
           rulesetId, legacyEvt.version(), legacyEvt.checksum(), Instant.now(),
           builtIndex.preferredFields(), markupRules, commissionRules,
           builtIndex.markupIndex(), builtIndex.commissionIndex(),
           builtIndex.markupCatchAll(), builtIndex.commissionCatchAll(),
-          ruleById, compiledDrl, null
+          ruleById, compiledDrl, null, legacyTypeRegistry
       );
       registry.swap(rulesetId, snapshot);
       Log.infof("Legacy swap completed: ruleset %s v%d", rulesetId, legacyEvt.version());

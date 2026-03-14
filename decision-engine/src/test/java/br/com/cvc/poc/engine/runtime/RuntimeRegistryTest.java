@@ -24,14 +24,14 @@ public class RuntimeRegistryTest {
         var registry = new RuntimeRegistry();
 
         var v1 = new RuntimeSnapshot("rs-1", 1L, "c1", Instant.now(),
-            List.of(), List.of(), List.of(), Map.of(), Map.of(), List.of(), List.of(), Map.of(), null, null);
+            List.of(), List.of(), List.of(), Map.of(), Map.of(), List.of(), List.of(), Map.of(), null, null, FieldTypeRegistry.empty());
         var prev = registry.swap("rs-1", v1);
         assertEquals(0L, prev.version()); // was empty
 
         assertEquals(1L, registry.currentSnapshot("rs-1").version());
 
         var v2 = new RuntimeSnapshot("rs-1", 2L, "c2", Instant.now(),
-            List.of(), List.of(), List.of(), Map.of(), Map.of(), List.of(), List.of(), Map.of(), null, null);
+            List.of(), List.of(), List.of(), Map.of(), Map.of(), List.of(), List.of(), Map.of(), null, null, FieldTypeRegistry.empty());
         var prev2 = registry.swap("rs-1", v2);
         assertEquals(1L, prev2.version());
         assertEquals(2L, registry.currentSnapshot("rs-1").version());
@@ -42,9 +42,9 @@ public class RuntimeRegistryTest {
         var registry = new RuntimeRegistry();
 
         var snapA = new RuntimeSnapshot("rs-A", 3L, "cA", Instant.now(),
-            List.of(), List.of(), List.of(), Map.of(), Map.of(), List.of(), List.of(), Map.of(), null, null);
+            List.of(), List.of(), List.of(), Map.of(), Map.of(), List.of(), List.of(), Map.of(), null, null, FieldTypeRegistry.empty());
         var snapB = new RuntimeSnapshot("rs-B", 7L, "cB", Instant.now(),
-            List.of(), List.of(), List.of(), Map.of(), Map.of(), List.of(), List.of(), Map.of(), null, null);
+            List.of(), List.of(), List.of(), Map.of(), Map.of(), List.of(), List.of(), Map.of(), null, null, FieldTypeRegistry.empty());
 
         registry.swap("rs-A", snapA);
         registry.swap("rs-B", snapB);
@@ -57,7 +57,7 @@ public class RuntimeRegistryTest {
     void backwardCompatCurrentReturnsRulesetRuntime() {
         var registry = new RuntimeRegistry();
         var snap = new RuntimeSnapshot("rs-1", 5L, "c5", Instant.now(),
-            List.of("broker"), List.of(), List.of(), Map.of(), Map.of(), List.of(), List.of(), Map.of(), null, null);
+            List.of("broker"), List.of(), List.of(), Map.of(), Map.of(), List.of(), List.of(), Map.of(), null, null, FieldTypeRegistry.empty());
         registry.swap("rs-1", snap);
 
         var rt = registry.current("rs-1");

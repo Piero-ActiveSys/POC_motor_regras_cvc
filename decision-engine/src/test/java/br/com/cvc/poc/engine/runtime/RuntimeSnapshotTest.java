@@ -29,7 +29,7 @@ public class RuntimeSnapshotTest {
             List.of("broker", "cidade"),
             List.of(), List.of(),
             Map.of(), Map.of(), List.of(), List.of(), Map.of(),
-            null, null
+            null, null, FieldTypeRegistry.empty()
         );
         var rt = snap.toRulesetRuntime();
         assertEquals("rs-1", rt.rulesetId());

@@ -13,6 +13,8 @@ Esta pasta contém os scripts para:
 ```text
 scripts/
 ├── bench.sh
+├── bench-graalvm.ps1
+├── bench-concurrent.py        ← NOVO: stress test concorrente
 ├── gen_data.py
 ├── generated_queries.json
 └── generated_rules.json
@@ -349,4 +351,75 @@ Contém um payload compatível com o motor de cálculo:
     }
   ]
 }
+```
+
+---
+
+## Stress Test Concorrente (`bench-concurrent.py`)
+
+Script para avaliar a performance do decision-engine sob carga concorrente.
+
+### Pré-requisitos
+
+- Python 3.10+
+- decision-engine rodando (`mvn -pl decision-engine quarkus:dev`)
+- Regras carregadas (50k geradas via `gen_data.py`)
+
+### Modos de uso
+
+**1. Request com N items fatiados do generated_queries.json:**
+
+```powershell
+# 10 requests simultâneas, cada uma com 1000 items
+python scripts/bench-concurrent.py `
+  --source scripts/generated_queries.json `
+  --items-per-request 1000 `
+  --concurrency 10 `
+  --requests 20
+```
+
+**2. Payload customizado (salvo de um curl, por exemplo):**
+
+```powershell
+# Salvar um payload:
+#   Invoke-WebRequest ... -OutFile scripts/my-payload.json
+
+# Disparar 50 requests simultâneas usando esse payload
+python scripts/bench-concurrent.py `
+  --payload scripts/my-payload.json `
+  --concurrency 50 `
+  --requests 100
+```
+
+**3. Varredura automática (sweep) — ideal para documentação:**
+
+```powershell
+# Roda cenários com 1, 5, 10, 20, 50 chamadas simultâneas
+python scripts/bench-concurrent.py `
+  --source scripts/generated_queries.json `
+  --items-per-request 1000 `
+  --sweep 1,5,10,20,50
+```
+
+### Parâmetros
+
+| Parâmetro | Default | Descrição |
+|---|---|---|
+| `--url` | `http://localhost:8082` | Base URL do decision-engine |
+| `--source` | — | Caminho para `generated_queries.json` (fatiado em N requests) |
+| `--payload` | — | Caminho para JSON pronto (alternativa a `--source`) |
+| `--items-per-request` | `1000` | Quantidade de items por request (com `--source`) |
+| `--concurrency` | `10` | Chamadas HTTP simultâneas |
+| `--requests` | = concurrency | Total de requests a disparar |
+| `--warmup` | `3` | Requests sequenciais de aquecimento antes do teste |
+| `--sweep` | — | Lista de concorrências para varredura (ex: `1,5,10,20,50`) |
+| `--timeout` | `120` | Timeout HTTP em segundos |
+| `--out-csv` | `scripts/bench-concurrent-results.csv` | Arquivo CSV de saída |
+
+### Saída CSV
+
+Resultados acumulados em `scripts/bench-concurrent-results.csv`:
+
+```csv
+timestamp,jdk,concurrency,requests,items_per_req,wall_ms,avg_ms,min_ms,max_ms,p50_ms,p90_ms,p95_ms,p99_ms,throughput_rps,throughput_items_sec,errors
 ```

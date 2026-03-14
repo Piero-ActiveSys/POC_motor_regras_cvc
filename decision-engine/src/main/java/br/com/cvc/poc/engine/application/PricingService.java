@@ -115,8 +115,8 @@ public class PricingService {
     for (var item : items) {
       long prepareStart = System.nanoTime();
       PreparedItem preparedItem = normalizationEnabled
-          ? PreparedItem.from(item, runtime.preferredIndexFields())
-          : PreparedItem.fromPreNormalized(item, runtime.preferredIndexFields());
+          ? PreparedItem.from(item, runtime.preferredIndexFields(), runtime.fieldTypeRegistry())
+          : PreparedItem.fromPreNormalized(item, runtime.preferredIndexFields(), runtime.fieldTypeRegistry());
       long preparedElapsed = System.nanoTime() - prepareStart;
       metrics.addRequestPreparationNanos(preparedElapsed);
       metrics.addItemPreparationNanos(preparedElapsed);

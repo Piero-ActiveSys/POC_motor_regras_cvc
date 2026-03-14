@@ -17,7 +17,7 @@ public record PreparedItem(
   private static final ConcurrentHashMap<String, String> KEY_CACHE = new ConcurrentHashMap<>();
   private static final String QNTDE_PAX_KEY = normalizedKey("QntdePax");
 
-  public static PreparedItem from(PricingItem item, List<String> preferredIndexFields) {
+  public static PreparedItem from(PricingItem item, List<String> preferredIndexFields, FieldTypeRegistry typeRegistry) {
     var sourceFields = item.fields();
     int expectedSize = sourceFields.size() + 1;
 
@@ -32,7 +32,8 @@ public record PreparedItem(
 
     var prepared = new HashMap<String, PreparedFieldValue>(Math.max(16, raw.size() * 2));
     for (var entry : raw.entrySet()) {
-      prepared.put(entry.getKey(), PreparedFieldValue.from(entry.getValue()));
+      var hint = typeRegistry.kindFor(entry.getKey());
+      prepared.put(entry.getKey(), PreparedFieldValue.fromTyped(entry.getValue(), hint));
     }
 
     var keys = IndexBuilder.keysForSearch(prepared, preferredIndexFields);
@@ -43,7 +44,7 @@ public record PreparedItem(
    * Fast path: assumes keys and values are already normalized.
    * Skips TextNormalizer.normKey for keys and TextNormalizer.normValue for values.
    */
-  public static PreparedItem fromPreNormalized(PricingItem item, List<String> preferredIndexFields) {
+  public static PreparedItem fromPreNormalized(PricingItem item, List<String> preferredIndexFields, FieldTypeRegistry typeRegistry) {
     var sourceFields = item.fields();
     int expectedSize = sourceFields.size() + 1;
 
@@ -57,7 +58,8 @@ public record PreparedItem(
 
     var prepared = new HashMap<String, PreparedFieldValue>(Math.max(16, raw.size() * 2));
     for (var entry : raw.entrySet()) {
-      prepared.put(entry.getKey(), PreparedFieldValue.fromPreNormalized(entry.getValue()));
+      var hint = typeRegistry.kindFor(entry.getKey());
+      prepared.put(entry.getKey(), PreparedFieldValue.fromPreNormalizedTyped(entry.getValue(), hint));
     }
 
     var keys = IndexBuilder.keysForSearch(prepared, preferredIndexFields);

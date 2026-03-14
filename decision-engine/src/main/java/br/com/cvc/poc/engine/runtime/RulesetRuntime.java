@@ -16,9 +16,10 @@ public record RulesetRuntime(
     List<RuleRuntime> markupCatchAll,
     List<RuleRuntime> commissionCatchAll,
     List<String> activeMarkupFields,
-    List<String> activeCommissionFields
+    List<String> activeCommissionFields,
+    FieldTypeRegistry fieldTypeRegistry
 ) {
   public static RulesetRuntime empty(String id) {
-    return new RulesetRuntime(id, 0L, "empty", List.of(), List.of(), List.of(), Map.of(), Map.of(), List.of(), List.of(), List.of(), List.of());
+    return new RulesetRuntime(id, 0L, "empty", List.of(), List.of(), List.of(), Map.of(), Map.of(), List.of(), List.of(), List.of(), List.of(), FieldTypeRegistry.empty());
   }
 }

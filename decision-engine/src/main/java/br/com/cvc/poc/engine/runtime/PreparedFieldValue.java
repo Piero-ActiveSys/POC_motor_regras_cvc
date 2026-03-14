@@ -38,6 +38,33 @@ public record PreparedFieldValue(
     );
   }
 
+  /**
+   * Typed path: only parses the representation needed by the given hint.
+   * Eliminates exception-based probing for types that won't be used.
+   */
+  public static PreparedFieldValue fromTyped(Object raw, CompiledCondition.ValueKind hint) {
+    String normalized = TextNormalizer.normValue(raw);
+    return switch (hint) {
+      case STRING, STRING_SET -> new PreparedFieldValue(raw, normalized, null, null, null);
+      case NUMBER  -> new PreparedFieldValue(raw, normalized, tryParseNumber(raw), null, null);
+      case DATE    -> new PreparedFieldValue(raw, normalized, null, tryParseDate(raw), null);
+      case BOOLEAN -> new PreparedFieldValue(raw, normalized, null, null, ValueCoercion.toBoolean(raw));
+    };
+  }
+
+  /**
+   * Typed + pre-normalized path: combines both optimizations.
+   */
+  public static PreparedFieldValue fromPreNormalizedTyped(Object raw, CompiledCondition.ValueKind hint) {
+    String strValue = raw == null ? null : String.valueOf(raw).trim();
+    return switch (hint) {
+      case STRING, STRING_SET -> new PreparedFieldValue(raw, strValue, null, null, null);
+      case NUMBER  -> new PreparedFieldValue(raw, strValue, tryParseNumber(raw), null, null);
+      case DATE    -> new PreparedFieldValue(raw, strValue, null, tryParseDate(raw), null);
+      case BOOLEAN -> new PreparedFieldValue(raw, strValue, null, null, ValueCoercion.toBoolean(raw));
+    };
+  }
+
   private static LocalDate tryParseDate(Object v) {
     try { return DateNormalizer.parseBr(v); }
     catch (Exception e) { return null; }
